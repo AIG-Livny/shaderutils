@@ -1,24 +1,37 @@
 #!/usr/bin/python3
-REQUIRED_VERSION = '0.4.2'
+REQUIRED_VERSION = '0.4.3'
 
 def config() -> list["mapyr.ProjectConfig"]:
 
     result = []
-    p = mapyr.ProjectConfig()
 
-    p.OUT_FILE = "libshaderutils.a"
-    p.SRC_DIRS = ["."]
-    p.SUBPROJECTS = [
+    # Debug config
+    debug = mapyr.ProjectConfig()
+
+    debug.OUT_FILE = "libshaderutils.a"
+    debug.SRC_DIRS = ["."]
+    debug.SUBPROJECTS = [
         "../stringlib",
         "../fileutils",
-        ]
+    ]
+    debug.CFLAGS    = ["-g","-O0"]
+    debug.GROUPS = ['DEBUG']
 
-    result.append(p)
+    result.append(debug)
+
+    # Release config
+    release = debug.copy()
+    release.CFLAGS    = ["-Ofast","-flto"]
+    release.LINK_EXE_FLAGS = ["-flto"]
+
+    release.GROUPS = ['RELEASE']
+
+    result.append(release)
     return result
 
 #-----------FOOTER-----------
 # https://github.com/AIG-Livny/mapyr.git
-if __name__ == "__main__": 
+if __name__ == "__main__":
     try:
         import mapyr
     except:
