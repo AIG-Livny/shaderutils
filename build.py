@@ -1,38 +1,33 @@
 #!/usr/bin/python3
 
-import copy
+def get_config() -> 'mapyr.Config':
+    tc = mapyr.Config()
+    tc.MINIMUM_REQUIRED_VERSION = '0.6.0'
+    return tc
 
-def tool_config() -> "mapyr.ToolConfig":
-    tc = mapyr.ToolConfig()
-    tc.MINIMUM_REQUIRED_VERSION = '0.4.5'
+def get_project(name:str) -> 'mapyr.Project|None':
+    if name not in ['main','debug']:
+        return None
 
-def config() -> list["mapyr.ProjectConfig"]:
+    p = mapyr.create_c_project(
+        'libshaderutils.a',
+        private_config={
+            'SOURCES':['shaderutils.c'],
+            'CFLAGS':['-Ofast','-flto'] if name == 'main' else ['-g','-O0'],
+            'LINK_FLAGS':['-flto'] if name == 'main' else [],
+        },
+        export_config={
+            'INCLUDE_DIRS':['.'],
+            'LIBS':['shaderutils'],
+            'LIB_DIRS':['.'],
+        },
+        subprojects=[
+            mapyr.get_module('../stringlib/build.py').get_project(name),
+            mapyr.get_module('../fileutils/build.py').get_project(name),
+        ]
+    )
 
-    result = []
-
-    # Debug config
-    debug = mapyr.ProjectConfig()
-
-    debug.OUT_FILE = "libshaderutils.a"
-    debug.SRC_DIRS = ["."]
-    debug.SUBPROJECTS = [
-        "../stringlib",
-        "../fileutils",
-    ]
-    debug.CFLAGS    = ["-g","-O0"]
-    debug.GROUPS = ['DEBUG']
-
-    result.append(debug)
-
-    # Release config
-    release = copy.deepcopy(debug)
-    release.CFLAGS    = ["-Ofast","-flto"]
-    release.LINK_EXE_FLAGS = ["-flto"]
-
-    release.GROUPS = ['RELEASE']
-
-    result.append(release)
-    return result
+    return p
 
 #-----------FOOTER-----------
 # https://github.com/AIG-Livny/mapyr.git
@@ -46,4 +41,4 @@ except:
     import mapyr
 
 if __name__ == "__main__":
-    mapyr.process(config)
+    mapyr.process(get_project,get_config)
