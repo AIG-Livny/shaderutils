@@ -17,10 +17,10 @@ int check_result(GLuint handler, bool isLink){
     }else{
         glGetShaderiv(handler, GL_COMPILE_STATUS, &status);
     }
-    
+
     if (status == GL_FALSE) {
         GLint length;
-        
+
         if(isLink){
             glGetProgramiv(handler, GL_INFO_LOG_LENGTH, &length);
         }else{
@@ -40,7 +40,7 @@ int check_result(GLuint handler, bool isLink){
             error = SU_RET_COMPILE_ERROR;
         }
         free(info);
-        
+
         return error;
     }
 
@@ -57,7 +57,7 @@ int su_compile_program(GLuint* result, GLenum type, const char *source) {
 
     GLint status;
     glGetShaderiv(*result, GL_COMPILE_STATUS, &status);
-    
+
     int error = check_result(*result, false);
 
     if (error) {
@@ -76,12 +76,15 @@ int su_link_shader(GLuint* result, GLuint programs[]){
     }
 
     glLinkProgram(*result);
-    
+
     int error = check_result(*result, true);
 
     for(int i=0; i < SU_MAX_PROGRAMS; i++){
-        glDetachShader(*result, programs[i]);
-        glDeleteShader(programs[i]);
+        if ( programs[i] ) {
+            glDetachShader(*result, programs[i]);
+            glDeleteShader(programs[i]);
+            programs[i] = 0;
+        }
     }
 
     return error;
@@ -89,7 +92,7 @@ int su_link_shader(GLuint* result, GLuint programs[]){
 
 int su_load_shader(GLuint* result, const char* dirpath){
     if(fs_identify_path(dirpath) != FS_DIRECTORY) { return SU_RET_PATH_NOT_DIR; }
-    
+
     int error = SU_RET_SHADER_OK;
     char vert_shader_present = 0;
     char comp_shader_present = 0;
@@ -113,9 +116,9 @@ int su_load_shader(GLuint* result, const char* dirpath){
         #define TYPES_NUM 4
         const struct {
             const char* extension;
-            GLuint type; 
-        } 
-        types_map[TYPES_NUM] = 
+            GLuint type;
+        }
+        types_map[TYPES_NUM] =
         {
             {"vs", GL_VERTEX_SHADER},
             {"fs", GL_FRAGMENT_SHADER},
@@ -165,7 +168,7 @@ int su_load_shader(GLuint* result, const char* dirpath){
     }
 
     d_free(dir);
-    
+
     return error;
 }
 
@@ -181,7 +184,7 @@ int su_load_vert_frag(GLuint* result, const char* vertpath, const char* fragpath
         error = SU_RET_BAD_FILE;
         goto exit;
     }
-    
+
     GLuint shader_programs[SU_MAX_PROGRAMS] = {};
 
     error = su_compile_program(&shader_programs[0], GL_VERTEX_SHADER, f_read_file(vert_file));
@@ -190,7 +193,7 @@ int su_load_vert_frag(GLuint* result, const char* vertpath, const char* fragpath
     if(error) goto exit;
     error = su_link_shader(result, shader_programs);
 
-    exit: 
+    exit:
     f_free(vert_file);
     f_free(frag_file);
 
